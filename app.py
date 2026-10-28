@@ -1,17 +1,17 @@
 import streamlit as st
 from groq import Groq
 
-# 1. Konfiguracja strony - układ scentrowany (jak w telefonie/Messengerze)
-st.set_page_config(page_title="Veyron AI", page_icon="⚡", layout="centered")
+# 1. Konfiguracja strony
+st.set_page_config(page_title="Veyron AI", page_icon="⚡", layout="wide")
 
-# CSS - Wygląd a'la Messenger
+# 2. CSS - Ultra-okrągłe dymki w stylu Messengera
 st.markdown("""
 <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* Dymek Użytkownika (Prawa strona - Niebieski z zaokrągleniami Messengera) */
+    /* Dymek Użytkownika (Prawa strona) */
     div[data-testid="stChatMessage"]:has(div:contains("👤")) {
         flex-direction: row-reverse;
         text-align: right;
@@ -19,15 +19,15 @@ st.markdown("""
     div[data-testid="stChatMessage"]:has(div:contains("👤")) div[data-testid="stChatMessageContent"] {
         background-color: #0084ff;
         color: white;
-        padding: 10px 16px;
-        border-radius: 18px 18px 4px 18px;
+        padding: 12px 18px;
+        border-radius: 20px 20px 4px 20px; /* Zaokrąglenia Messengera */
         display: inline-block;
-        max-width: 80%;
+        max-width: 75%;
         border: none;
-        box-shadow: none;
+        box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
     }
     
-    /* Dymek Asystenta (Lewa strona - Ciemnoszary z zaokrągleniami Messengera) */
+    /* Dymek Asystenta Veyron (Lewa strona) */
     div[data-testid="stChatMessage"]:has(div:contains("⚡")) {
         flex-direction: row;
         text-align: left;
@@ -35,33 +35,51 @@ st.markdown("""
     div[data-testid="stChatMessage"]:has(div:contains("⚡")) div[data-testid="stChatMessageContent"] {
         background-color: #3e4042;
         color: white;
-        padding: 10px 16px;
-        border-radius: 18px 18px 18px 4px;
+        padding: 12px 18px;
+        border-radius: 20px 20px 20px 4px; /* Zaokrąglenia Messengera */
         display: inline-block;
-        max-width: 80%;
+        max-width: 75%;
         border: none;
-        box-shadow: none;
+        box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Bezpieczne pobieranie klucza
+# 3. Pobranie klucza
 try:
     api_key = st.secrets["GROQ_API_KEY"]
 except:
     api_key = None
 
-# 3. Górna sekcja (Zamiast panelu bocznego)
-st.caption("Wybierz moduł AI:")
-tryb = st.selectbox(
-    "Wybierz moduł AI:",
-    ["Veyron 1.5 flash", "Veyron 1.7 pro", "Veyron 2.0 learn", "Veyron 3.1 coding", "Veyron custom"],
-    label_visibility="collapsed"
-)
+# 4. Inicjalizacja pamięci czatu
+if "messages" not in st.session_state:
+    st.session_state.messages = [{"role": "assistant", "content": "Hej! W czym mogę Ci dzisiaj pomóc? 👋"}]
 
-st.title(f"⚡ Veyron")
+# 5. Panel Boczny - Zarządzanie czatami i modułami
+with st.sidebar:
+    st.title("⚡ Veyron")
+    
+    # Przycisk nowej rozmowy
+    if st.button("➕ Nowa rozmowa", use_container_width=True):
+        st.session_state.messages = [{"role": "assistant", "content": "Hej! W czym mogę Ci dzisiaj pomóc? 👋"}]
+        st.rerun()
+        
+    st.markdown("---")
+    
+    # Miejsce na przyszłą bazę danych
+    st.markdown("📂 **Historia i Foldery**")
+    st.caption("Obecnie czaty znikają po odświeżeniu. Stałe foldery wymagają podpięcia bazy danych.")
+    
+    st.markdown("---")
+    
+    st.caption("Ustawienia modułu:")
+    tryb = st.selectbox(
+        "Wybierz silnik AI:",
+        ["Veyron 1.5 flash", "Veyron 1.7 pro", "Veyron 2.0 learn", "Veyron 3.1 coding"],
+        label_visibility="collapsed"
+    )
 
-# Konfiguracja parametrów
+# Konfiguracja parametrów modeli
 temperatura = 0.7
 max_tokens = 2048
 system_prompt = "Jesteś inteligentnym, nowoczesnym asystentem."
@@ -69,49 +87,29 @@ model_id = "openai/gpt-oss-120b"
 
 if tryb == "Veyron 1.5 flash":
     model_id = "qwen/qwen3.8-27b"
-    system_prompt = "Odpowiadaj błyskawicznie, zwięźle i konkretnie. Jesteś trybem Flash."
+    system_prompt = "Odpowiadaj błyskawicznie i konkretnie."
     temperatura = 0.5
 elif tryb == "Veyron 1.7 pro":
-    model_id = "openai/gpt-oss-120b"
-    system_prompt = "Jesteś zaawansowanym analitykiem Veyron Pro. Rozwiązuj problemy krok po kroku, bądź precyzyjny."
+    system_prompt = "Jesteś analitykiem Veyron Pro. Rozwiązuj problemy krok po kroku."
     temperatura = 0.3
-elif tryb == "Veyron 2.0 learn":
-    model_id = "openai/gpt-oss-120b"
-    system_prompt = "Jesteś mentorem edukacyjnym. Tłumacz złożone zjawiska prostym językiem, używaj przykładów."
-    temperatura = 0.6
-elif tryb == "Veyron 3.1 coding":
-    model_id = "openai/gpt-oss-120b"
-    system_prompt = "Jesteś ekspertem programowania. Podawaj zoptymalizowany kod z komentarzami."
-    temperatura = 0.2
-elif tryb == "Veyron custom":
-    with st.expander("⚙️ Ustawienia niestandardowe"):
-        temperatura = st.slider("Kreatywność (Temperature):", 0.0, 1.5, 0.7, 0.1)
-        max_tokens = st.slider("Długość odpowiedzi:", 256, 4096, 2048, 128)
-        system_prompt = st.text_area("Instrukcja:", "Jesteś w pełni dostosowanym modelem.")
-    model_id = "openai/gpt-oss-120b"
 
-# 4. Inicjalizacja wiadomości w stylu komunikatora
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-    st.session_state.messages.append({"role": "assistant", "content": "Hej! W czym mogę Ci dzisiaj pomóc? 👋"})
-
+# 6. Główny interfejs czatu
 avatar_dict = {"user": "👤", "assistant": "⚡"}
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"], avatar=avatar_dict[msg["role"]]):
         st.markdown(msg["content"])
 
-# 5. Dolna sekcja - Załącznik nad polem tekstowym
+# 7. Załącznik i pole tekstowe (na dole)
 st.markdown("---")
-with st.expander("📎 Dodaj załącznik (opcjonalnie)"):
+with st.expander("📎 Dodaj plik tekstowy lub kod do rozmowy"):
     uploaded_file = st.file_uploader("Wybierz plik", label_visibility="collapsed", type=["txt", "py", "md", "csv"])
 
-user_prompt = st.chat_input("Napisz wiadomość...")
+user_prompt = st.chat_input("Napisz wiadomość do Veyrona...")
 
-# Logika wysyłania wiadomości
 if user_prompt:
     if not api_key:
-        st.error("Brak dostępu do klucza API w chmurze! Upewnij się, że wpisałeś GROQ_API_KEY w zakładce Secrets.")
+        st.error("Brak dostępu do klucza API w zakładce Secrets!")
     else:
         client = Groq(api_key=api_key)
         pelna_wiadomosc = user_prompt
