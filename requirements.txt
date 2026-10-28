@@ -1,4 +1,2 @@
-plaintext
-
 streamlit
 groq
